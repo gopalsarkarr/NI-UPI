@@ -9,6 +9,9 @@ import LedgerPage from './pages/LedgerPage';
 import CryptoPage from './pages/CryptoPage';
 import AboutPage from './pages/AboutPage';
 
+// Read backend URL from environment or fallback to relative URL for local proxy
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 export default function App() {
   const [meshState, setMeshState] = useState({ devices: [], idempotencyCacheSize: 0 });
   const [accounts, setAccounts] = useState([]);
@@ -23,10 +26,10 @@ export default function App() {
   const refreshAll = async () => {
     try {
       const [keyRes, accRes, txRes, meshRes] = await Promise.all([
-        fetch('/api/server-key').then((r) => r.json()),
-        fetch('/api/accounts').then((r) => r.json()),
-        fetch('/api/transactions').then((r) => r.json()),
-        fetch('/api/mesh/state').then((r) => r.json()),
+        fetch(`${API_BASE}/api/server-key`).then((r) => r.json()),
+        fetch(`${API_BASE}/api/accounts`).then((r) => r.json()),
+        fetch(`${API_BASE}/api/transactions`).then((r) => r.json()),
+        fetch(`${API_BASE}/api/mesh/state`).then((r) => r.json()),
       ]);
       setServerKey(keyRes);
       setAccounts(accRes);
@@ -47,7 +50,7 @@ export default function App() {
   const handleInject = async (payload) => {
     setLoadingAction('inject');
     try {
-      const res = await fetch('/api/demo/send', {
+      const res = await fetch(`${API_BASE}/api/demo/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -81,7 +84,7 @@ export default function App() {
   const handleGossip = async () => {
     setLoadingAction('gossip');
     try {
-      const res = await fetch('/api/mesh/gossip', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/mesh/gossip`, { method: 'POST' });
       const data = await res.json();
       const msg = `Gossip round finished: ${data.transmissionsInRound} transmissions across ${data.activeDevices} devices`;
       setLastResult(msg);
@@ -103,7 +106,7 @@ export default function App() {
   const handleFlush = async () => {
     setLoadingAction('flush');
     try {
-      const res = await fetch('/api/mesh/flush', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/mesh/flush`, { method: 'POST' });
       const data = await res.json();
       const settledCount = data.results.filter((r) => r.outcome === 'SETTLED').length;
       const rejectedCount = data.results.filter((r) => r.outcome === 'REJECTED' || r.outcome === 'INVALID').length;
@@ -139,7 +142,7 @@ export default function App() {
   const handleTestConcurrency = async () => {
     setLoadingAction('concurrency');
     try {
-      const res = await fetch('/api/demo/test-concurrency', {
+      const res = await fetch(`${API_BASE}/api/demo/test-concurrency`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senderVpa: 'alice@upi', receiverVpa: 'bob@upi', amount: 200 }),
@@ -165,7 +168,7 @@ export default function App() {
   const handleReset = async () => {
     setIsResetting(true);
     try {
-      await fetch('/api/mesh/reset', { method: 'POST' });
+      await fetch(`${API_BASE}/api/mesh/reset`, { method: 'POST' });
       setLastPacket(null);
       setLastResult('Mesh network, cache, and balances reset to default');
       toast.info('🔄 Demo Reset: Mesh packet queues, idempotency cache, and balances restored to initial state.');
